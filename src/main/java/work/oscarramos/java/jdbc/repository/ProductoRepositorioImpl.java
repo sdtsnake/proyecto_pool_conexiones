@@ -9,15 +9,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProductoRepositorioImpl implements Repositorio<Producto> {
-    private Connection getConnection() throws SQLException {
-        return ConexionBaseDatos.getConnection();
+    private Connection conn;
+
+    public ProductoRepositorioImpl(Connection conn) {
+        this.conn = conn;
     }
 
     @Override
-    public List<Producto> findAll() {
+    public List<Producto> findAll() throws SQLException {
         List<Producto> productos = new ArrayList<>();
 
-        try (Statement stmt = getConnection().createStatement();
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT p.*, c.nombre AS categoria FROM productos AS p " +
                      "INNER JOIN categorias AS c ON (p.categoria_id = c.id)")) {
             while (rs.next()) {
@@ -25,8 +27,6 @@ public class ProductoRepositorioImpl implements Repositorio<Producto> {
 
                 productos.add(p);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return productos;
     }
@@ -34,8 +34,8 @@ public class ProductoRepositorioImpl implements Repositorio<Producto> {
     @Override
     public Producto findById(Long id) {
         Producto producto = null;
-        try (PreparedStatement stmt = getConnection().
-                prepareStatement("SELECT p.*, c.nombre AS categoria FROM productos AS p INNER JOIN categorias AS c ON (p.categoria_id = c.id) WHERE p.id = ?")) {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT p.*, c.nombre AS categoria FROM productos AS p INNER JOIN categorias AS c ON (p.categoria_id = c.id) WHERE p.id = ?")) {
             stmt.setLong(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -49,36 +49,43 @@ public class ProductoRepositorioImpl implements Repositorio<Producto> {
     }
 
     @Override
-    public void save(Producto producto) {
+    public Producto save(Producto producto) throws SQLException {
         String sql;
         if (producto.getId() != null && producto.getId() > 0) {
-            sql = "UPDATE productos SET nombre=?, precio=?, categoria_id=? WHERE id=?";
+            sql = "UPDATE productos SET nombre=?, precio=?, categoria_id=?, sku=? WHERE id=?";
         } else {
-            sql = "INSERT INTO productos(nombre, precio, categoria_id, fecha_registro) VALUES(?,?,?,?)";
+            sql = "INSERT INTO productos(nombre, precio, categoria_id, sku, fecha_registro) VALUES(?,?,?,?,?)";
         }
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, producto.getNombres());
             stmt.setLong(2, producto.getPrecio());
             stmt.setLong(3,producto.getCategoria().getId());
+            stmt.setString(4,producto.getSku());
             if (producto.getId() != null && producto.getId() > 0) {
-                stmt.setLong(4, producto.getId());
+                stmt.setLong(5, producto.getId());
             } else {
-                stmt.setDate(4, new Date(producto.getFech_registro().getTime()));
+                stmt.setDate(5, new Date(producto.getFech_registro().getTime()));
             }
+
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+
+            if(producto.getId()==null){
+                try(ResultSet rs = stmt.getGeneratedKeys()){
+                    if(rs.next()){
+                        producto.setId(rs.getLong(1));
+                    }
+                }
+            }
+            return producto;
         }
     }
 
     @Override
-    public void delete(Long id) {
-        try (PreparedStatement stmt = getConnection()
+    public void delete(Long id) throws SQLException {
+        try (PreparedStatement stmt = conn
                 .prepareStatement("DELETE FROM productos WHERE id=?")) {
             stmt.setLong(1, id);
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -88,6 +95,7 @@ public class ProductoRepositorioImpl implements Repositorio<Producto> {
         p.setNombres(rs.getString("nombre"));
         p.setPrecio(rs.getInt("precio"));
         p.setFech_registro(rs.getDate("fecha_registro"));
+        p.setSku(rs.getString("sku"));
         Categoria categoria = new Categoria();
         categoria.setId(rs.getLong("categoria_id"));
         categoria.setNombres(rs.getString("categoria"));

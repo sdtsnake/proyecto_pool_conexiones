@@ -8,6 +8,7 @@ public class Producto {
     private Integer precio;
     private Date fech_registro;
     private Categoria categoria;
+    private String sku;
 
     public Producto() {
     }
@@ -59,12 +60,21 @@ public class Producto {
         this.categoria = categoria;
     }
 
+    public String getSku() {
+        return sku;
+    }
+
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
+
     @Override
     public String toString() {
         return  id +
                 "|" + nombres +
                 "|" + precio +
                 "|" + fech_registro +
-                "|" + categoria.getNombres();
+                "|" + categoria.getNombres() +
+                "|" + sku;
     }
 }

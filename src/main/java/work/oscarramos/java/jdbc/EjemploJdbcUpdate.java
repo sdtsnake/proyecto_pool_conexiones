@@ -13,7 +13,7 @@ import java.util.Date;
 public class EjemploJdbcUpdate {
     public static void main(String[] args) {
         try (Connection conn = ConexionBaseDatos.getConnection()) {
-            Repositorio<Producto> repositorio = new ProductoRepositorioImpl();
+            Repositorio<Producto> repositorio = new ProductoRepositorioImpl(conn);
             System.out.println("================ Listar ================");
             repositorio.findAll().forEach(System.out::println);
             System.out.println("================ ver por id ================");
