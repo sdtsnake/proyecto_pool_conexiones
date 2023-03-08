@@ -1,11 +1,9 @@
-package work.oscarramos.java.jdbc.repository;
+package work.oscarramos.java.jdbc.service;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-public interface Repositorio<T> {
-    void setConn(Connection conn);
+public interface Servicio<T>{
     List<T> findAll() throws SQLException;
     T findById(Long id) throws SQLException;
     T save(T t) throws SQLException;

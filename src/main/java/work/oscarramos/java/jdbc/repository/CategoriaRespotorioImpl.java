@@ -17,6 +17,14 @@ public class CategoriaRespotorioImpl implements Repositorio<Categoria> {
         this.conn = conn;
     }
 
+    public CategoriaRespotorioImpl() {
+    }
+
+    @Override
+    public void setConn(Connection conn) {
+        this.conn = conn;
+    }
+
     @Override
     public List<Categoria> findAll() throws SQLException {
         List<Categoria> categorias = new ArrayList<>();
